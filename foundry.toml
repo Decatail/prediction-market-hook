@@ -1,0 +1,22 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+
+# X Layer Mainnet
+[rpc_endpoints]
+xlayer = "https://rpc.xlayer.tech"
+
+# Build for X Layer (Optimism-based, EVM compatible)
+evm_version = "cancun"
+solc = "0.8.24"
+optimizer = true
+optimizer_runs = 999999
+via_ir = false
+
+# Gas reporting
+gas_reports = ["PredictionMarketHook"]
+
+# Etherscan verification
+[etherscan]
+xlayer = { key = "${OKX_EXPLORER_API_KEY}", url = "https://www.okx.com/explorer/xlayer/api" }
