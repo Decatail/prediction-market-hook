@@ -1,99 +1,55 @@
-# 🎯 PredictionMarketHook
+# PredictionMarketHook
 
-> Uniswap V4 Hook: 一个池子 = DEX + 预测市场 + 自动结算
+一个 Uniswap V4 Hook，让任何池子都能开预测市场。不需要预言机、不需要平台，到时间自动结算。
 
-**"Hook the Future" Hackathon** — X Layer × Uniswap × Flap
-
----
-
-## 解决的问题
-
-| 传统预测市场 | PredictionMarketHook |
-|-------------|---------------------|
-| 依赖外部预言机 (Chainlink) | **池子自己的 TWAP 当裁判** |
-| 需要独立的平台和合约 | **长在 Uniswap 池子上** |
-| 开预测需要平台审批 | **任何人都能开** |
-| 结算要等人工投票 | **全自动，到时间就结算** |
+这是给 X Layer "Hook the Future" 黑客松做的。合约已经部署在 X Layer 测试网上了。
 
 ---
 
-## 怎么玩
+## 它能干嘛
+
+Polymarket 那种预测市场大家都用过，但有个问题：它得靠 Chainlink 这种外部预言机来判输赢。而且还得到 Polymarket 的平台上去开，不是你想开就能开。
+
+这个 Hook 的思路很简单——Uniswap 池子本身就有价格，为什么还要找外部预言机呢？
+
+挂上这个 Hook 之后，任何人都可以在任意一个 V4 池子上开一局预测。赌 UP 还是 DOWN，到时间了 Hook 自己去看池子的 TWAP，自动把钱分给赢家。
+
+相当于把 Polymarket 的核心功能直接塞进了 Uniswap。不用部署新合约，不用桥接资产，不用相信第三方——池子自己的价格就是裁判。
+
+---
+
+## 简单讲下流程
+
+创建市场的人选好池子和时长，自己先押一边。其他人看到之后可以跟注。到期前十分钟锁盘，防止有人在最后一秒砸盘作弊。时间到了谁都能来点结算，Hook 算出 TWAP 之后自动分钱。
+
+如果两边下注差太多（超过 3:1），就不让继续押了，保护少数那一方。如果币价跌了超过 95%，触发熔断，所有人原路退钱。要是两小时了都没人来跟注，创建者可以一键赎回。
+
+---
+
+## 合约
+
+部署在 X Layer 测试网上：
+
+`0x0e855f486081E8e7f575dc2EB6Ea9b83A42ef49E`
+
+[在 OKX Explorer 上查看](https://www.okx.com/explorer/xlayer-testnet/address/0x0e855f486081E8e7f575dc2EB6Ea9b83A42ef49E)
+
+---
+
+## 测试结果
 
 ```
-创建者: 选择 Token 对 + 预测时长 → 下注 UP/DOWN → 创建市场
-参与者: 看到市场 → 跟注 UP 或 DOWN → 赔率实时可见
-结算: 到时 → Hook 读 TWAP → 判定涨跌 → 赢家+创建者分钱
-异常: 币归零 → 熔断退款 | 无人跟 → 创建者赎回
-```
-
----
-
-## 风控机制
-
-| 攻击向量 | 防御 |
-|---------|------|
-| 结算点价格操纵 | TWAP 30分钟累加器 |
-| 闪电贷砸盘 | TWAP 天然免疫 + 截止前10分钟锁盘 |
-| 两边严重失衡 | 赔率线 3:1 封顶 |
-| 创建者 rug | 所有权部署后废弃，只结算时转账 |
-| Token 归零 | 当前价 < 开盘价 × 5% → 熔断退款 |
-| 无人参与 | 2小时窗口后创建者一键赎回 |
-
----
-
-## 部署
-
-```bash
-# 安装依赖
-forge install
-
-# 部署到 X Layer 主网
-forge script script/Deploy.s.sol --rpc-url xlayer --broadcast --private-key $PRIVATE_KEY
-
-# 验证合约
-forge verify-contract --chain-id 196 --etherscan-api-key $OKX_EXPLORER_API_KEY \
-    <DEPLOYED_ADDRESS> src/PredictionMarketHook.sol:PredictionMarketHook \
-    --constructor-args $(cast abi-encode "constructor(address)" $POOL_MANAGER)
+创建市场 → 0.01 ETH 押涨 ✅
+跟注     → 0.005 ETH 押跌 ✅  
+赔率     → 66% / 34% ✅
+TWAP    → 正常读取 ✅
 ```
 
 ---
 
-## 测试
+## 文件
 
-```bash
-forge test -vvv
-```
-
----
-
-## 技术架构
-
-```
-┌──────────────────────────────────────────────────────┐
-│                    Uniswap V4 Pool                     │
-│  ┌──────────────┐    ┌────────────────────────────┐  │
-│  │ AMM (swap)   │    │ PredictionMarketHook       │  │
-│  │              │    │                            │  │
-│  │ token0⇄token1│    │ afterSwap → 更新TWAP       │  │
-│  │              │    │ createMarket() → 开预测    │  │
-│  │  每次swap    │    │ placeBet() → 下注          │  │
-│  │  触发Hook    │    │ settle() → 读TWAP结算      │  │
-│  └──────────────┘    └────────────────────────────┘  │
-└──────────────────────────────────────────────────────┘
-```
-
----
-
-## 提交清单
-
-- [ ] 合约部署到 X Layer 主网/测试网
-- [ ] 可验证的合约地址
-- [ ] Twitter 发布 @XLayerOfficial @Uniswap @flapdotsh
-- [ ] Google Form 提交 (截止 5/28 23:59 UTC)
-- [ ] Demo 视频 (1-3 分钟)
-
----
-
-## License
-
-MIT
+- `src/PredictionMarketHook.sol` — 合约代码
+- `script/Deploy.s.sol` — Foundry 部署脚本  
+- `test/PredictionMarketHook.t.sol` — 测试
+- `foundry.toml` — 构建配置
