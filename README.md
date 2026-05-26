@@ -32,7 +32,7 @@ Polymarket 那种预测市场大家都用过，但有个问题：它得靠 Chain
 
 `0x0e855f486081E8e7f575dc2EB6Ea9b83A42ef49E`
 
-[在 OKX Explorer 上查看](https://www.okx.com/explorer/xlayer-testnet/address/0x0e855f486081E8e7f575dc2EB6Ea9b83A42ef49E)
+X Layer Testnet · Chain 195
 
 ---
 
