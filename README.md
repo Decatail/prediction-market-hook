@@ -2,7 +2,6 @@
 
 一个 Uniswap V4 Hook，让任何池子都能开预测市场。不需要预言机、不需要平台，到时间自动结算。
 
-这是给 X Layer "Hook the Future" 黑客松做的。合约已经部署在 X Layer 测试网上了。
 
 ---
 
